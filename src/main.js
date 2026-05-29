@@ -6,9 +6,11 @@ import { loadMoleculeModel } from "./model.js";
 import { createTuner } from "./tuner.js";
 import { createUIController } from "./ui.js";
 
-// 自前マーカー（assets/marker-il13.png から生成した追跡データ）を既定に使用。
+// 既定マーカー: 動作実績のある公式card（自前マーカーは追跡性が不十分だったため一旦こちら）。
+// 追跡に向く自前画像ができたら ./assets/<name>.mind に差し替える。
 // ?target=... のURLパラメータで一時的に別マーカーへ切替も可能。
-const DEFAULT_IMAGE_TARGET = "./assets/marker-il13.mind";
+const DEFAULT_IMAGE_TARGET =
+  "https://cdn.jsdelivr.net/gh/hiukim/mind-ar-js@1.2.5/examples/image-tracking/assets/card-example/card.mind";
 
 const params = new URLSearchParams(window.location.search);
 const imageTargetSrc = params.get("target") || DEFAULT_IMAGE_TARGET;
