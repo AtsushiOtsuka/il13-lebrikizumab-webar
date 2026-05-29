@@ -282,6 +282,18 @@ h1 {
   display: none !important;
 }
 
+/* MindARが生成するカメラ映像(video)・描画(canvas)を画面全体にカバー表示。
+   既定だと video が左に寄って右側に黒い隙間ができるため、!important で上書きする。 */
+#ar-container video,
+#ar-container canvas {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
 .control-row {
   pointer-events: auto;
   display: grid;
