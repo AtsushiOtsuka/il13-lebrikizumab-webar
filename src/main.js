@@ -4,6 +4,7 @@ import { AUTO_SCRIPT, AR_STATES } from "./states.js";
 import { createSceneLights } from "./scene.js";
 import { loadMoleculeModel } from "./model.js";
 import { createTuner } from "./tuner.js";
+import { createSparkles } from "./effects.js";
 import { createUIController } from "./ui.js";
 
 // 既定マーカー: 自前のフォトリアル版(marker-il13-v2)。検出テスト合格済み。
@@ -18,6 +19,7 @@ let mindarThree = null;
 let renderer = null;
 let educationScene = null;
 let tuner = null;
+let sparkles = null;
 let animationClock = null;
 let autoTimer = null;
 let autoStepIndex = 0;
@@ -54,23 +56,32 @@ async function startAR() {
     const sceneObjects = await loadMoleculeModel();
     educationScene = sceneObjects;
 
-    // 向き調整パネル（スライダーでrx/ry/rz・大きさ・自転を微調整。設定は保存される）
-    tuner = createTuner({
-      initial: sceneObjects.getSettings(),
-      onChange: (s) => sceneObjects.applySettings(s),
-    });
+    // 向き調整パネルは通常のARでは非表示（視界を妨げないため）。
+    // URLに ?tune=1 を付けたときだけ表示し、その場で向きを微調整できる。
+    if (params.get("tune") === "1") {
+      tuner = createTuner({
+        initial: sceneObjects.getSettings(),
+        onChange: (s) => sceneObjects.applySettings(s),
+      });
+    }
 
     const { scene, camera } = mindarThree;
     createSceneLights().forEach((light) => scene.add(light));
 
+    // マーカー上に出すキラキラ点滅エフェクト
+    sparkles = createSparkles();
+
     const anchor = mindarThree.addAnchor(0);
     anchor.group.add(sceneObjects.root);
+    anchor.group.add(sparkles.object3D);
     anchor.onTargetFound = () => {
       sceneObjects.setVisible(true);
+      sparkles.setVisible(true);
       ui.setTracking(true);
     };
     anchor.onTargetLost = () => {
       sceneObjects.setVisible(false);
+      sparkles.setVisible(false);
       ui.setTracking(false);
     };
 
@@ -84,6 +95,7 @@ async function startAR() {
       const delta = Math.min(animationClock.getDelta(), 0.05);
       const elapsed = animationClock.elapsedTime;
       sceneObjects.update(delta, elapsed);
+      if (sparkles) sparkles.update(delta, elapsed);
       renderer.render(scene, camera);
     });
 
@@ -123,6 +135,7 @@ async function stopAR(options = { showStart: true }) {
   mindarThree = null;
   renderer = null;
   educationScene = null;
+  sparkles = null;
   animationClock = null;
   isStarted = false;
 
