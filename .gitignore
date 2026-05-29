@@ -1,0 +1,22 @@
+# --- 公開リポジトリ(GitHub Pages)から除外: 非Web・重い・作業用ファイル ---
+unity/
+scripts/
+graphify-out/
+docs/
+.claude/
+.DS_Store
+
+# Blender 作業ファイル
+*.blend
+*.blend1
+
+# 使っていない大きなアセット（WebARはil13-practice.glbのみ使用）
+assets/_qa_*.png
+assets/*-preview-*.png
+assets/il13-block-schematic.png
+assets/il13-comparison.glb
+assets/il13-scene.glb
+
+# プレビューの一時生成物
+.playwright-mcp/
+glb_preview_check.png

@@ -1,0 +1,421 @@
+:root {
+  color-scheme: dark;
+  --bg: #071114;
+  --panel: rgba(11, 26, 30, 0.88);
+  --panel-strong: rgba(14, 33, 39, 0.96);
+  --line: rgba(178, 225, 221, 0.2);
+  --text: #eef8f7;
+  --muted: #b7c9cb;
+  --dim: #7f979a;
+  --cyan: #28d8cf;
+  --blue: #4f8cff;
+  --amber: #ffb43b;
+  --magenta: #ff4bd8;
+  --green: #57f287;
+  --gray: #9aa3ad;
+  --danger: #ff7878;
+  --radius: 8px;
+  font-family: "Zen Kaku Gothic New", system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+.app-shell {
+  position: fixed;
+  inset: 0;
+  min-height: 100svh;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(40, 216, 207, 0.16), transparent 32%),
+    linear-gradient(165deg, #071114 0%, #102026 48%, #090f14 100%);
+}
+
+.ar-container {
+  position: fixed;
+  inset: 0;
+  background: #020506;
+}
+
+.ar-container canvas,
+.ar-container video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover;
+}
+
+.start-screen,
+.fallback-panel {
+  position: relative;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  min-height: 100svh;
+  padding: max(24px, env(safe-area-inset-top)) 22px max(28px, env(safe-area-inset-bottom));
+  text-align: center;
+}
+
+.start-screen[hidden],
+.fallback-panel[hidden],
+.runtime-ui[hidden] {
+  display: none;
+}
+
+.brand-mark {
+  position: relative;
+  width: 108px;
+  height: 108px;
+  margin-bottom: 24px;
+}
+
+.brand-core,
+.brand-orbit {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.brand-core {
+  inset: 34px;
+  background: var(--magenta);
+  box-shadow: 0 0 34px rgba(255, 75, 216, 0.55);
+}
+
+.brand-orbit {
+  border: 2px solid rgba(40, 216, 207, 0.68);
+}
+
+.brand-orbit-a {
+  transform: rotate(22deg) scaleX(1.32);
+}
+
+.brand-orbit-b {
+  border-color: rgba(79, 140, 255, 0.72);
+  transform: rotate(-31deg) scaleX(1.28);
+}
+
+.eyebrow,
+.status-label,
+.caption-kicker,
+.start-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+h1 {
+  max-width: 720px;
+  margin: 10px 0 0;
+  font-size: clamp(1.8rem, 8.6vw, 4rem);
+  line-height: 1.03;
+  font-weight: 900;
+}
+
+.lead {
+  max-width: 620px;
+  margin: 20px 0 28px;
+  color: var(--muted);
+  font-size: clamp(1rem, 4.2vw, 1.28rem);
+  line-height: 1.75;
+}
+
+.primary-button,
+.secondary-button,
+.state-button,
+.ghost-button {
+  min-height: 48px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+  touch-action: manipulation;
+  transition:
+    transform 160ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    opacity 160ms ease;
+}
+
+.primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: min(320px, 86vw);
+  padding: 16px 22px;
+  background: linear-gradient(135deg, var(--cyan), var(--blue));
+  color: #031014;
+  font-size: 1.12rem;
+  font-weight: 900;
+  box-shadow: 0 16px 44px rgba(40, 216, 207, 0.28);
+}
+
+.primary-button:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.primary-button:active,
+.secondary-button:active,
+.state-button:active,
+.ghost-button:active {
+  transform: scale(0.98);
+}
+
+.start-note {
+  margin-top: 16px;
+}
+
+.fallback-panel {
+  background: linear-gradient(180deg, rgba(7, 17, 20, 0.94), rgba(7, 17, 20, 0.98));
+}
+
+.fallback-panel h2 {
+  margin: 0 0 12px;
+  font-size: clamp(1.6rem, 8vw, 2.6rem);
+}
+
+.fallback-panel p {
+  max-width: 640px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.8;
+  white-space: pre-line;
+}
+
+.runtime-ui {
+  pointer-events: none;
+  position: fixed;
+  z-index: 20;
+  inset: 0;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding:
+    max(14px, env(safe-area-inset-top))
+    14px
+    max(14px, env(safe-area-inset-bottom));
+}
+
+.runtime-ui button {
+  pointer-events: auto;
+}
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgba(6, 16, 18, 0.72);
+  backdrop-filter: blur(16px);
+}
+
+.tracking-status {
+  margin: 2px 0 0;
+  font-size: 1.04rem;
+  font-weight: 900;
+}
+
+.tracking-status.is-found {
+  color: var(--green);
+}
+
+.tracking-status.is-lost {
+  color: var(--amber);
+}
+
+.ghost-button {
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.16);
+  font-weight: 700;
+}
+
+.tracking-hint {
+  justify-self: center;
+  align-self: start;
+  max-width: 88vw;
+  margin: 18px 0 0;
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 180, 59, 0.32);
+  border-radius: var(--radius);
+  background: rgba(25, 19, 8, 0.72);
+  color: #ffe4ad;
+  font-weight: 700;
+  text-align: center;
+  backdrop-filter: blur(14px);
+}
+
+.tracking-hint.is-hidden {
+  visibility: hidden;
+}
+
+.bottom-panel {
+  pointer-events: none;
+  display: grid;
+  gap: 10px;
+}
+
+/* glb表示モード: 状態切替/解説/凡例は使わないため非表示にして画面を整理。
+   （要素自体はDOMに残す＝ui.jsがエラーにならないように） */
+.bottom-panel {
+  display: none !important;
+}
+
+.control-row {
+  pointer-events: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.state-button,
+.secondary-button {
+  padding: 11px 12px;
+  background: rgba(9, 25, 29, 0.84);
+  border-color: rgba(178, 225, 221, 0.18);
+  color: var(--muted);
+  font-weight: 900;
+  backdrop-filter: blur(16px);
+}
+
+.state-button.is-active {
+  background: rgba(40, 216, 207, 0.16);
+  border-color: rgba(40, 216, 207, 0.7);
+  color: var(--text);
+}
+
+.secondary-button {
+  pointer-events: auto;
+  width: 100%;
+  color: #dce8ff;
+  border-color: rgba(79, 140, 255, 0.46);
+  background: rgba(79, 140, 255, 0.16);
+}
+
+.secondary-button.is-active {
+  color: #061018;
+  background: var(--blue);
+}
+
+.caption-card {
+  pointer-events: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  padding: 14px;
+  backdrop-filter: blur(18px);
+  box-shadow: 0 -12px 38px rgba(0, 0, 0, 0.26);
+}
+
+.caption-card h2 {
+  margin: 3px 0 8px;
+  font-size: clamp(1.02rem, 4.8vw, 1.42rem);
+  line-height: 1.38;
+}
+
+.caption-card p {
+  margin: 0;
+}
+
+#caption-body {
+  color: var(--muted);
+  font-size: 0.94rem;
+  line-height: 1.65;
+}
+
+.legend-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px 10px;
+  margin: 12px 0 0;
+}
+
+.legend-grid div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.legend-grid dt {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 12px;
+  border-radius: 50%;
+  background: var(--swatch);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--swatch) 72%, transparent);
+}
+
+.legend-grid dd {
+  min-width: 0;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.noscript-message {
+  position: fixed;
+  inset: auto 16px 16px;
+  z-index: 30;
+  padding: 14px;
+  border-radius: var(--radius);
+  background: var(--panel-strong);
+  color: var(--text);
+}
+
+@media (min-width: 760px) {
+  .runtime-ui {
+    padding: 22px;
+  }
+
+  .top-bar {
+    justify-self: start;
+    min-width: 320px;
+  }
+
+  .tracking-hint {
+    margin-top: 22px;
+  }
+
+  .bottom-panel {
+    justify-self: center;
+    width: min(720px, 92vw);
+  }
+
+  .legend-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
