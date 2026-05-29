@@ -3,6 +3,7 @@ import { MindARThree } from "mindar-image-three";
 import { AUTO_SCRIPT, AR_STATES } from "./states.js";
 import { createSceneLights } from "./scene.js";
 import { loadMoleculeModel } from "./model.js";
+import { createTuner } from "./tuner.js";
 import { createUIController } from "./ui.js";
 
 const DEFAULT_IMAGE_TARGET =
@@ -14,6 +15,7 @@ const imageTargetSrc = params.get("target") || DEFAULT_IMAGE_TARGET;
 let mindarThree = null;
 let renderer = null;
 let educationScene = null;
+let tuner = null;
 let animationClock = null;
 let autoTimer = null;
 let autoStepIndex = 0;
@@ -49,6 +51,12 @@ async function startAR() {
     // Blenderで作ったglbモデルを読み込んでマーカー上に表示する
     const sceneObjects = await loadMoleculeModel();
     educationScene = sceneObjects;
+
+    // 向き調整パネル（スライダーでrx/ry/rz・大きさ・自転を微調整。設定は保存される）
+    tuner = createTuner({
+      initial: sceneObjects.getSettings(),
+      onChange: (s) => sceneObjects.applySettings(s),
+    });
 
     const { scene, camera } = mindarThree;
     createSceneLights().forEach((light) => scene.add(light));
@@ -93,6 +101,11 @@ async function stopAR(options = { showStart: true }) {
 
   if (renderer) {
     renderer.setAnimationLoop(null);
+  }
+
+  if (tuner) {
+    tuner.destroy();
+    tuner = null;
   }
 
   if (mindarThree) {
