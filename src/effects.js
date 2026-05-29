@@ -1,85 +1,66 @@
 import * as THREE from "three";
 
-// マーカー上のモデル周囲に「キラキラ点滅」する粒子を出すエフェクト。
-// 軽量（点群1つ＝1ドローコール）なのでモバイル/トラッキングに優しい。
-// createSparkles() -> { object3D, setVisible, update }
+// マーカー上のモデル上空に「花火」を打ち上げるエフェクト。
+//  - update() 内で一定間隔ごとに自動で打ち上げ
+//  - burst() を呼ぶと（画面タップ等で）即時に打ち上げ
+// 粒子はプール（点群1つ＝1ドローコール）で軽量。モバイル/トラッキングに優しい。
 
-export function createSparkles({ count = 150, radius = 0.85 } = {}) {
-  // キラキラの配色（金・シアン・マゼンタ・白）
+export function createFireworks({ poolSize = 800 } = {}) {
   const palette = [
-    [1.0, 0.85, 0.35],
-    [0.35, 0.9, 1.0],
-    [1.0, 0.45, 0.85],
-    [1.0, 1.0, 1.0],
+    [1.0, 0.85, 0.3],  // 金
+    [0.35, 0.9, 1.0],  // シアン
+    [1.0, 0.45, 0.85], // マゼンタ
+    [0.55, 1.0, 0.5],  // 緑
+    [1.0, 0.55, 0.2],  // オレンジ
+    [0.6, 0.7, 1.0],   // 青白
   ];
 
-  const positions = new Float32Array(count * 3);
-  const aPhase = new Float32Array(count);
-  const aSize = new Float32Array(count);
-  const aColor = new Float32Array(count * 3);
-
-  for (let i = 0; i < count; i++) {
-    // 球状にやや上方へ分布（モデルを包むように）
-    const theta = Math.random() * Math.PI * 2;
-    const phi = Math.acos(2 * Math.random() - 1);
-    const r = radius * (0.4 + 0.6 * Math.random());
-    positions[i * 3 + 0] = r * Math.sin(phi) * Math.cos(theta);
-    positions[i * 3 + 1] = r * Math.cos(phi) * 0.85 + 0.12; // 少し上寄り
-    positions[i * 3 + 2] = r * Math.sin(phi) * Math.sin(theta);
-
-    aPhase[i] = Math.random() * Math.PI * 2;
-    aSize[i] = 5 + Math.random() * 10;
-    const c = palette[(Math.random() * palette.length) | 0];
-    aColor[i * 3 + 0] = c[0];
-    aColor[i * 3 + 1] = c[1];
-    aColor[i * 3 + 2] = c[2];
-  }
+  const positions = new Float32Array(poolSize * 3);
+  const colors = new Float32Array(poolSize * 3);
+  const alphas = new Float32Array(poolSize);
+  const sizes = new Float32Array(poolSize);
+  // CPU側の物理状態
+  const vel = new Float32Array(poolSize * 3);
+  const age = new Float32Array(poolSize);
+  const life = new Float32Array(poolSize);
+  const active = new Uint8Array(poolSize);
+  let cursor = 0;
 
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
-  geometry.setAttribute("aPhase", new THREE.BufferAttribute(aPhase, 1));
-  geometry.setAttribute("aSize", new THREE.BufferAttribute(aSize, 1));
-  geometry.setAttribute("aColor", new THREE.BufferAttribute(aColor, 3));
+  geometry.setAttribute("aColor", new THREE.BufferAttribute(colors, 3));
+  geometry.setAttribute("aAlpha", new THREE.BufferAttribute(alphas, 1));
+  geometry.setAttribute("aSize", new THREE.BufferAttribute(sizes, 1));
 
   const material = new THREE.ShaderMaterial({
-    uniforms: {
-      uTime: { value: 0 },
-      uPixelRatio: { value: Math.min(window.devicePixelRatio || 1, 2) },
-    },
+    uniforms: { uPixelRatio: { value: Math.min(window.devicePixelRatio || 1, 2) } },
     transparent: true,
     depthWrite: false,
     blending: THREE.AdditiveBlending,
     vertexShader: /* glsl */ `
-      attribute float aPhase;
-      attribute float aSize;
       attribute vec3 aColor;
-      uniform float uTime;
+      attribute float aAlpha;
+      attribute float aSize;
       uniform float uPixelRatio;
       varying vec3 vColor;
-      varying float vTw;
+      varying float vAlpha;
       void main() {
         vColor = aColor;
-        // 各粒子ごとに位相をずらして点滅
-        float tw = 0.5 + 0.5 * sin(uTime * 3.2 + aPhase);
-        vTw = tw;
-        vec4 mv = modelViewMatrix * vec4(position, 1.0);
-        gl_PointSize = aSize * uPixelRatio * (0.35 + 0.65 * tw);
-        gl_Position = projectionMatrix * mv;
+        vAlpha = aAlpha;
+        gl_PointSize = aSize * uPixelRatio;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
       }
     `,
     fragmentShader: /* glsl */ `
       precision mediump float;
       varying vec3 vColor;
-      varying float vTw;
+      varying float vAlpha;
       void main() {
         vec2 uv = gl_PointCoord - 0.5;
         float d = length(uv);
         if (d > 0.5) discard;
         float core = smoothstep(0.5, 0.0, d);
-        // 十字のきらめき
-        float glint = max(0.0, 1.0 - abs(uv.x) * 9.0) + max(0.0, 1.0 - abs(uv.y) * 9.0);
-        float a = clamp(core + glint * 0.18 * core, 0.0, 1.0);
-        gl_FragColor = vec4(vColor, a * vTw * 0.9);
+        gl_FragColor = vec4(vColor, core * vAlpha);
       }
     `,
   });
@@ -88,14 +69,86 @@ export function createSparkles({ count = 150, radius = 0.85 } = {}) {
   points.visible = false;
   points.frustumCulled = false;
 
+  const GRAVITY = 0.95;      // 下向き重力（マーカー単位/秒^2）
+  let autoAcc = 0;
+  let nextAuto = 1.2;        // 最初の打ち上げまで
+
+  /** 1発打ち上げる。origin省略時はモデル上空のランダム位置。 */
+  function burst(origin) {
+    const o = origin || {
+      x: (Math.random() - 0.5) * 0.7,
+      y: 0.95 + Math.random() * 0.5,
+      z: (Math.random() - 0.5) * 0.35,
+    };
+    const baseCol = palette[(Math.random() * palette.length) | 0];
+    const n = 70 + ((Math.random() * 50) | 0);
+    const speed = 0.7 + Math.random() * 0.5;
+    for (let k = 0; k < n; k++) {
+      const i = cursor;
+      cursor = (cursor + 1) % poolSize;
+      const th = Math.random() * Math.PI * 2;
+      const ph = Math.acos(2 * Math.random() - 1);
+      const sp = speed * (0.45 + 0.55 * Math.random());
+      vel[i * 3 + 0] = sp * Math.sin(ph) * Math.cos(th);
+      vel[i * 3 + 1] = sp * Math.cos(ph) + 0.12; // わずかに上向き
+      vel[i * 3 + 2] = sp * Math.sin(ph) * Math.sin(th);
+      positions[i * 3 + 0] = o.x;
+      positions[i * 3 + 1] = o.y;
+      positions[i * 3 + 2] = o.z;
+      const c = Math.random() < 0.18 ? [1, 1, 1] : baseCol; // 一部は白できらめき
+      colors[i * 3 + 0] = c[0];
+      colors[i * 3 + 1] = c[1];
+      colors[i * 3 + 2] = c[2];
+      sizes[i] = 7 + Math.random() * 9;
+      age[i] = 0;
+      life[i] = 1.2 + Math.random() * 0.8;
+      active[i] = 1;
+      alphas[i] = 1;
+    }
+    geometry.attributes.aColor.needsUpdate = true;
+    geometry.attributes.aSize.needsUpdate = true;
+  }
+
+  function update(dt, _elapsed) {
+    // 自動打ち上げ（表示中のみ）
+    if (points.visible) {
+      autoAcc += dt;
+      if (autoAcc >= nextAuto) {
+        autoAcc = 0;
+        nextAuto = 2.0 + Math.random() * 2.6;
+        burst();
+      }
+    }
+    // 粒子の物理更新
+    for (let i = 0; i < poolSize; i++) {
+      if (!active[i]) continue;
+      age[i] += dt;
+      const t = age[i] / life[i];
+      if (t >= 1) {
+        active[i] = 0;
+        alphas[i] = 0;
+        continue;
+      }
+      vel[i * 3 + 1] -= GRAVITY * dt;
+      const drag = 1 - 0.55 * dt; // 空気抵抗で失速
+      vel[i * 3 + 0] *= drag;
+      vel[i * 3 + 1] *= drag;
+      vel[i * 3 + 2] *= drag;
+      positions[i * 3 + 0] += vel[i * 3 + 0] * dt;
+      positions[i * 3 + 1] += vel[i * 3 + 1] * dt;
+      positions[i * 3 + 2] += vel[i * 3 + 2] * dt;
+      alphas[i] = (1 - t) * (1 - t); // 後半でフェードアウト
+    }
+    geometry.attributes.position.needsUpdate = true;
+    geometry.attributes.aAlpha.needsUpdate = true;
+  }
+
   return {
     object3D: points,
+    burst,
     setVisible(v) {
       points.visible = v;
     },
-    update(_dt, elapsed) {
-      material.uniforms.uTime.value = elapsed;
-      points.rotation.y = elapsed * 0.15; // ゆっくり回して生命感
-    },
+    update,
   };
 }

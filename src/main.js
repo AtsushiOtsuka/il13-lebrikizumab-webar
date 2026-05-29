@@ -4,7 +4,7 @@ import { AUTO_SCRIPT, AR_STATES } from "./states.js";
 import { createSceneLights } from "./scene.js";
 import { loadMoleculeModel } from "./model.js";
 import { createTuner } from "./tuner.js";
-import { createSparkles } from "./effects.js";
+import { createFireworks } from "./effects.js";
 import { createUIController } from "./ui.js";
 
 // 既定マーカー: 自前のフォトリアル版(marker-il13-v2)。検出テスト合格済み。
@@ -19,7 +19,9 @@ let mindarThree = null;
 let renderer = null;
 let educationScene = null;
 let tuner = null;
-let sparkles = null;
+let fireworks = null;
+let fxTapHandler = null;
+let fxTapTarget = null;
 let animationClock = null;
 let autoTimer = null;
 let autoStepIndex = 0;
@@ -68,22 +70,29 @@ async function startAR() {
     const { scene, camera } = mindarThree;
     createSceneLights().forEach((light) => scene.add(light));
 
-    // マーカー上に出すキラキラ点滅エフェクト
-    sparkles = createSparkles();
+    // マーカー上空に出す花火エフェクト（自動打ち上げ＋タップで打ち上げ）
+    fireworks = createFireworks();
 
     const anchor = mindarThree.addAnchor(0);
     anchor.group.add(sceneObjects.root);
-    anchor.group.add(sparkles.object3D);
+    anchor.group.add(fireworks.object3D);
     anchor.onTargetFound = () => {
       sceneObjects.setVisible(true);
-      sparkles.setVisible(true);
+      fireworks.setVisible(true);
       ui.setTracking(true);
     };
     anchor.onTargetLost = () => {
       sceneObjects.setVisible(false);
-      sparkles.setVisible(false);
+      fireworks.setVisible(false);
       ui.setTracking(false);
     };
+
+    // 画面タップで花火を打ち上げる（ARの表示領域のみ。上部バーやボタンは対象外）
+    fxTapTarget = container;
+    fxTapHandler = () => {
+      if (fireworks) fireworks.burst();
+    };
+    container.addEventListener("pointerdown", fxTapHandler);
 
     await mindarThree.start();
 
@@ -95,7 +104,7 @@ async function startAR() {
       const delta = Math.min(animationClock.getDelta(), 0.05);
       const elapsed = animationClock.elapsedTime;
       sceneObjects.update(delta, elapsed);
-      if (sparkles) sparkles.update(delta, elapsed);
+      if (fireworks) fireworks.update(delta, elapsed);
       renderer.render(scene, camera);
     });
 
@@ -122,6 +131,12 @@ async function stopAR(options = { showStart: true }) {
     tuner = null;
   }
 
+  if (fxTapTarget && fxTapHandler) {
+    fxTapTarget.removeEventListener("pointerdown", fxTapHandler);
+  }
+  fxTapTarget = null;
+  fxTapHandler = null;
+
   if (mindarThree) {
     try {
       await mindarThree.stop();
@@ -135,7 +150,7 @@ async function stopAR(options = { showStart: true }) {
   mindarThree = null;
   renderer = null;
   educationScene = null;
-  sparkles = null;
+  fireworks = null;
   animationClock = null;
   isStarted = false;
 
