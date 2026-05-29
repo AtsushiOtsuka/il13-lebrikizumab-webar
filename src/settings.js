@@ -6,11 +6,11 @@ const KEY = "il13ar.modelTransform";
 
 // 既定値（rx/ry/rz は度、scale は倍率、spin は自転速度[度/秒]）
 export const DEFAULT_TRANSFORM = Object.freeze({
-  rx: -12,
-  ry: 0,
-  rz: 0,
+  rx: 11,
+  ry: -11,
+  rz: 4,
   scale: 1.0,
-  spin: 15,
+  spin: 7,
 });
 
 const NUM_KEYS = ["rx", "ry", "rz", "scale", "spin"];
